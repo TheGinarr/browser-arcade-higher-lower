@@ -1,116 +1,291 @@
 <!doctype html>
 <html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#07070f">
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/style.css">
-  <!-- spielspezifische Styles (Karten, Flip-Animation) – das gemeinsame Design bleibt in ../assets/style.css -->
-  <link rel="stylesheet" href="./spiel.css">
-  <title>Higher Lower · Browser-Arcade</title>
-  <meta name="description" content="Higher Lower mit dem Kartendeck: Kommt die nächste Karte höher oder tiefer? Arcade: baue die längste Kette. Casino: tippe mit Spielgeld auf Hoch, Tief oder Gleich. Ohne Konto und Cookies.">
-</head>
-<body style="--ak:var(--gold)">
-  <div class="raster" aria-hidden="true"></div>
-  <a class="skip-link" href="#main">Zum Inhalt springen</a>
-  <header class="kopf"><nav class="container nav" aria-label="Hauptnavigation">
-    <a class="marke" href="./"><span class="logo">▶</span>GAMES</a>
-    <div class="nav-links"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></div>
-  </nav></header>
-  <main id="main" class="container">
-    <div class="spiel-kopf"><div><h1>HIGHER LOWER</h1><p class="unterzeile">Kommt die nächste Karte höher oder tiefer? Arcade: baue die längste Kette. Casino: tippe mit Spielgeld.</p></div></div>
-
-    <!-- Modus-Umschalter im Stil der Minesweeper-Stufenleiste. Der gewählte Modus steht in aria-pressed. -->
-    <div class="modus-leiste" role="group" aria-label="Spielmodus">
-      <button type="button" class="knopf" data-modus="arcade" aria-pressed="true">Arcade <small>Längste Kette · ohne Geld</small></button>
-      <button type="button" class="knopf" data-modus="casino" aria-pressed="false">Casino <small>Spielgeld · Quoten</small></button>
-    </div>
-
-    <!-- Arcade-HUD (unverändert) -->
-    <div class="hud" id="hud-arcade" data-nur="arcade">
-      <div class="hud-feld"><div class="label">Kette</div><div class="wert" id="hud-kette">0</div></div>
-      <div class="hud-feld"><div class="label">Rekord-Kette</div><div class="wert" id="hud-rekord">0</div></div>
-      <div class="hud-feld"><div class="label">Restkarten</div><div class="wert" id="hud-rest">0</div></div>
-    </div>
-    <!-- Casino-HUD: Kontostand/Gewinn/Stand baut walletHud(), Restkarten kommen dazu -->
-    <div class="hud" id="hud-casino" data-nur="casino" hidden>
-      <div class="hud-wallet" id="wallet-hud"></div>
-      <div class="hud-feld"><div class="label">Restkarten</div><div class="wert" id="hud-rest-casino">0</div></div>
-    </div>
-
-    <div class="buehne">
-      <!-- Die beiden Karten werden von game.js hier hineingebaut (gleiche Bauweise für beide) -->
-      <div class="tisch">
-        <div class="tisch-spalte">
-          <div class="beschriftung">Aktuell</div>
-          <div id="halter-aktuell"></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#07070f" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./assets/style.css" />
+    <!-- spielspezifische Styles (Karten, Flip-Animation) – das gemeinsame Design bleibt in ../assets/style.css -->
+    <link rel="stylesheet" href="./spiel.css" />
+    <title>Higher Lower · Browser-Arcade</title>
+    <meta
+      name="description"
+      content="Higher Lower mit dem Kartendeck: Kommt die nächste Karte höher oder tiefer? Arcade: baue die längste Kette. Casino: tippe mit Spielgeld auf Hoch, Tief oder Gleich. Ohne Konto und Cookies."
+    />
+  </head>
+  <body style="--ak: var(--gold)">
+    <div class="raster" aria-hidden="true"></div>
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+    <header class="kopf">
+      <nav class="container nav" aria-label="Hauptnavigation">
+        <a class="marke" href="./"><span class="logo">▶</span>GAMES</a>
+        <div class="nav-links">
+          <a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a>
         </div>
-        <div class="tisch-spalte">
-          <div class="beschriftung">Stapel</div>
-          <div class="stapel" id="stapel" data-schichten="2"><div id="halter-naechste"></div></div>
+      </nav>
+    </header>
+    <main id="main" class="container">
+      <div class="spiel-kopf">
+        <div>
+          <h1>HIGHER LOWER</h1>
+          <p class="unterzeile">
+            Kommt die nächste Karte höher oder tiefer? Arcade: baue die längste Kette. Casino: tippe
+            mit Spielgeld.
+          </p>
         </div>
       </div>
 
-      <p class="meldung" id="meldung" data-art="neutral" aria-live="polite"></p>
-      <div class="gewinn-anzeige" id="gewinn" data-nur="casino" aria-live="polite" hidden></div>
-
-      <!-- Einsatz-Chips nur im Casino-Modus -->
-      <div class="chips chips-mitte" id="chips" data-nur="casino" role="group" aria-label="Einsatz wählen" hidden>
-        <button type="button" class="chip" data-wert="10" aria-pressed="false">10</button>
-        <button type="button" class="chip" data-wert="25" aria-pressed="false">25</button>
-        <button type="button" class="chip" data-wert="50" aria-pressed="true">50</button>
-        <button type="button" class="chip" data-wert="100" aria-pressed="false">100</button>
+      <!-- Modus-Umschalter im Stil der Minesweeper-Stufenleiste. Der gewählte Modus steht in aria-pressed. -->
+      <div class="modus-leiste" role="group" aria-label="Spielmodus">
+        <button type="button" class="knopf" data-modus="arcade" aria-pressed="true">
+          Arcade <small>Längste Kette · ohne Geld</small>
+        </button>
+        <button type="button" class="knopf" data-modus="casino" aria-pressed="false">
+          Casino <small>Spielgeld · Quoten</small>
+        </button>
       </div>
 
-      <div class="tipp-knoepfe">
-        <button class="knopf primaer tipp-knopf" id="tipp-hoch" type="button"><span class="tipp-name">HOCH ▲</span><span class="tipp-quote" data-nur="casino" hidden></span></button>
-        <button class="knopf primaer tipp-knopf" id="tipp-tief" type="button"><span class="tipp-name">TIEF ▼</span><span class="tipp-quote" data-nur="casino" hidden></span></button>
-        <button class="knopf primaer tipp-knopf" id="tipp-gleich" type="button" data-nur="casino" hidden><span class="tipp-name">GLEICH =</span><span class="tipp-quote"></span></button>
-        <button class="knopf primaer tipp-knopf" id="neue-runde" type="button" hidden>Neue Runde</button>
+      <!-- Arcade-HUD (unverändert) -->
+      <div class="hud" id="hud-arcade" data-nur="arcade">
+        <div class="hud-feld">
+          <div class="label">Kette</div>
+          <div class="wert" id="hud-kette">0</div>
+        </div>
+        <div class="hud-feld">
+          <div class="label">Rekord-Kette</div>
+          <div class="wert" id="hud-rekord">0</div>
+        </div>
+        <div class="hud-feld">
+          <div class="label">Restkarten</div>
+          <div class="wert" id="hud-rest">0</div>
+        </div>
+      </div>
+      <!-- Casino-HUD: Kontostand/Gewinn/Stand baut walletHud(), Restkarten kommen dazu -->
+      <div class="hud" id="hud-casino" data-nur="casino" hidden>
+        <div class="hud-wallet" id="wallet-hud"></div>
+        <div class="hud-feld">
+          <div class="label">Restkarten</div>
+          <div class="wert" id="hud-rest-casino">0</div>
+        </div>
       </div>
 
-      <p class="deck-hinweis" id="deck-hinweis"></p>
-    </div>
+      <div class="buehne">
+        <!-- Die beiden Karten werden von game.js hier hineingebaut (gleiche Bauweise für beide) -->
+        <div class="tisch">
+          <div class="tisch-spalte">
+            <div class="beschriftung">Aktuell</div>
+            <div id="halter-aktuell"></div>
+          </div>
+          <div class="tisch-spalte">
+            <div class="beschriftung">Stapel</div>
+            <div class="stapel" id="stapel" data-schichten="2">
+              <div id="halter-naechste"></div>
+            </div>
+          </div>
+        </div>
 
-    <p class="steuerung" data-nur="arcade">Steuerung: <kbd>↑</kbd> oder <kbd>W</kbd> für HOCH, <kbd>↓</kbd> oder <kbd>S</kbd> für TIEF. Am Handy einfach die Knöpfe antippen. Ass ist die höchste Karte, gleicher Wert zählt als Unentschieden.</p>
-    <p class="steuerung" data-nur="casino" hidden>Steuerung: <kbd>↑</kbd> oder <kbd>W</kbd> für HOCH, <kbd>↓</kbd> oder <kbd>S</kbd> für TIEF, <kbd>G</kbd> für GLEICH. Am Handy einfach die Knöpfe antippen. Ass ist die höchste Karte. Die Quote steht auf dem Knopf.</p>
+        <p class="meldung" id="meldung" data-art="neutral" aria-live="polite"></p>
+        <div class="gewinn-anzeige" id="gewinn" data-nur="casino" aria-live="polite" hidden></div>
 
-    <div class="hinweis hinweis-casino"><strong>Hinweis:</strong> Nur Spielgeld – kein Echtgeld, keine Kaufmöglichkeit. Der Arcade-Modus kommt ganz ohne Geld aus; das Casino-Konto teilen sich alle Casino-Spiele dieser Seite und liegt nur in deinem Browser.</div>
+        <!-- Einsatz-Chips nur im Casino-Modus -->
+        <div
+          class="chips chips-mitte"
+          id="chips"
+          data-nur="casino"
+          role="group"
+          aria-label="Einsatz wählen"
+          hidden
+        >
+          <button type="button" class="chip" data-wert="10" aria-pressed="false">10</button>
+          <button type="button" class="chip" data-wert="25" aria-pressed="false">25</button>
+          <button type="button" class="chip" data-wert="50" aria-pressed="true">50</button>
+          <button type="button" class="chip" data-wert="100" aria-pressed="false">100</button>
+        </div>
 
-    <section style="max-width:420px;margin-top:36px"><h2 id="topliste-titel" style="font-family:var(--pixel);font-weight:400;font-size:.85rem">Lokale Top 3 · Längste Ketten</h2><div id="topliste"></div>
-      <button class="knopf" id="reset" style="margin-top:10px">Spielstand zurücksetzen</button>
-      <p id="reset-hinweis" style="margin:8px 0 0;color:var(--mut);font-size:.85rem" hidden>Es zählt der höchste Netto-Gewinn eines einzelnen Tipps. Dein Spielgeld bleibt beim Zurücksetzen unverändert.</p></section>
+        <div class="tipp-knoepfe">
+          <button class="knopf primaer tipp-knopf" id="tipp-hoch" type="button">
+            <span class="tipp-name">HOCH ▲</span
+            ><span class="tipp-quote" data-nur="casino" hidden></span>
+          </button>
+          <button class="knopf primaer tipp-knopf" id="tipp-tief" type="button">
+            <span class="tipp-name">TIEF ▼</span
+            ><span class="tipp-quote" data-nur="casino" hidden></span>
+          </button>
+          <button
+            class="knopf primaer tipp-knopf"
+            id="tipp-gleich"
+            type="button"
+            data-nur="casino"
+            hidden
+          >
+            <span class="tipp-name">GLEICH =</span><span class="tipp-quote"></span>
+          </button>
+          <button class="knopf primaer tipp-knopf" id="neue-runde" type="button" hidden>
+            Neue Runde
+          </button>
+        </div>
 
-    <section class="lernbox"><details open><summary>Anleitung &amp; Regeln</summary>
-      <p><strong>Ziel:</strong> Tippe richtig, ob die nächste Karte höher oder tiefer ist – und baue die längste Kette.</p>
-      <ul>
-        <li>Es zählt nur der Kartenwert: 2 ist die niedrigste Karte, Ass die höchste. Die Farbe (♠ ♥ ♦ ♣) ist egal.</li>
-        <li>Richtig getippt: Kette +1 und weiter. Falsch getippt: Runde vorbei.</li>
-        <li>Hat die nächste Karte denselben Wert, ist es unentschieden – die Kette bleibt, es geht einfach weiter.</li>
-        <li>Gezogen wird ohne Zurücklegen; ist das Deck leer, wird neu gemischt.</li>
-      </ul>
-      <p><strong>Casino-Modus (nur Spielgeld):</strong> Oben auf „Casino“ umschalten. Beim Wechsel startet das Spiel neu. Die Kette zählt hier nicht, dafür geht es um Spielgeld vom gemeinsamen Casino-Konto.</p>
-      <ul>
-        <li><strong>Einsatz:</strong> Wähle einen Chip (10, 25, 50 oder 100), dann tippst du HOCH, TIEF oder GLEICH. Der Einsatz wird sofort abgebucht.</li>
-        <li><strong>Quote:</strong> Sie steht auf jedem Knopf (zum Beispiel „×1,71“) und hängt davon ab, wie viele passende Karten noch im Deck sind. Bei einem Treffer bekommst du Einsatz × Quote (gerundet) zurück, sonst ist der Einsatz weg. Seltene Tipps zahlen viel, wahrscheinliche wenig.</li>
-        <li><strong>GLEICH:</strong> Die nächste Karte hat exakt denselben Wert. Das ist selten und zahlt deshalb deutlich mehr. Sind alle gleichen Karten schon gezogen, ist der Knopf gesperrt.</li>
-        <li><strong>Wichtiger Unterschied zum Arcade-Modus:</strong> Dort ist gleicher Wert ein Unentschieden und die Kette bleibt. Im Casino-Modus verliert ein HOCH- oder TIEF-Tipp bei gleichem Wert. Dafür gibt es ja den GLEICH-Knopf.</li>
-        <li><strong>Top 3:</strong> Im Casino-Modus zählt dein höchster Netto-Gewinn eines einzelnen Tipps. Gibt es keinen Platz in der Topliste, gibt es auch keinen Dialog. Wird das Spielgeld knapp (unter 10), bekommst du neues Startgeld.</li>
-      </ul>
-    </details></section>
+        <p class="deck-hinweis" id="deck-hinweis"></p>
+      </div>
 
-    <section class="lernbox"><details><summary>Wie funktioniert der Code?</summary>
-      <p><strong>Das Deck.</strong> Es ist ein Array aus 52 Objekten wie <code>{ wert: 12, farbe: 1 }</code> (Dame, Herz). Gezogen wird mit <code>deck.pop()</code>: Die Karte verschwindet aus dem Array, also gibt es kein Zurücklegen. Ist das Deck leer, baut <code>neuesDeck()</code> ein frisches (ohne die Karte, die gerade offen liegt) und <code>mischen()</code> mischt es.</p>
-      <p><strong>Mischen mit Fisher-Yates.</strong> Von hinten nach vorne tauscht jede Position mit einer zufälligen Position davor oder sich selbst: <code>j = Math.floor(zufall() * (i + 1))</code>. Das liefert jede der 52! Reihenfolgen mit gleicher Wahrscheinlichkeit. Der beliebte Kurztrick <code>sort(() =&gt; Math.random() - 0.5)</code> ist dagegen ungleichmäßig, weil er nie dafür gedacht war.</p>
-      <p><strong>Der 3D-Flip.</strong> Jede Karte hat zwei Flächen übereinander: Vorderseite und Rückseite. <code>perspective</code> am äußeren Element erzeugt die Tiefenwirkung, <code>transform-style: preserve-3d</code> hält die Kinder im Raum, und <code>backface-visibility: hidden</code> blendet die jeweils abgewandte Fläche aus. Die Vorderseite ist ab Werk um 180° gedreht, sodass sie erst sichtbar wird, wenn die Karte per <code>rotateY(180deg)</code> umkippt. Die Animation übernimmt eine CSS-<code>transition</code>; JavaScript setzt nur die Klasse <code>aufgedeckt</code>.</p>
-      <p><strong>Ablauf mit async/await.</strong> Ein Tipp besteht aus mehreren Schritten mit Pausen (aufdecken, Ergebnis zeigen, nächste Karte). Mit <code>await warte(ms)</code> liest sich das wie ein normales Skript von oben nach unten, statt in verschachtelten Timer-Funktionen zu enden.</p>
-      <p><strong>Vom Zufall zur Quote (Casino-Modus).</strong> Aus <code>zaehleVerbleibende(deck, wert)</code> kennen wir, wie viele der verbleibenden Karten höher, tiefer oder gleich sind. Beispiel: Liegt eine 9 offen, sind noch 51 Karten im Deck: 20 höher (10 bis Ass), 28 tiefer (2 bis 8) und 3 gleich. Die Wahrscheinlichkeit für HOCH ist also 20/51, etwa 39 %. Die <em>faire Quote</em> ist der Kehrwert: 51/20 = 2,55. Hättest du bei dieser Quote unendlich oft gespielt, käme genau dein Einsatz wieder heraus (0,39 × 2,55 = 1).</p>
-      <p><strong>Der Hausvorteil.</strong> Damit die Bank nicht leer ausgeht, zahlt sie weniger als fair: Quote × 0,94, das sind 6 % Abschlag. Aus 2,55 wird 2,40. Auf lange Sicht bekommst du von jedem Spielgeld nur etwa 94 % zurück; die fehlenden 6 % sind der Hausvorteil. Ein einzelner Tipp kann trotzdem gewinnen – der Vorteil zeigt sich erst über viele Runden. Zwei Feinheiten: Die Quote wird auf 2 Nachkommastellen gerundet und ist nie kleiner als 1,05, sonst wäre ein „sicherer“ Tipp witzlos. (Bei fast sicheren Tipps über 95 % liegt die Mindestquote sogar über der fairen Quote, dort hat der Spieler einen kleinen Vorteil – ein Nebeneffekt, der den Schnitt etwas unter 6 % drückt.) Die Funktion <code>quoteBerechnen(restkarten, treffer)</code> ist rein und in Node testbar.</p>
-      <p><strong>Zahlungsfluss.</strong> <code>einsatzAbbuchen()</code> zieht den Einsatz VOR dem Aufdecken ab, die Quote wird dabei festgehalten. Danach kommt die Karte, und <code>rundeAbschliessen(einsatz, auszahlung)</code> schreibt <code>Math.round(einsatz × quote)</code> gut (oder 0 bei Niederlage). Der Arcade-Modus nutzt dieselben Karten und dieselbe Animation, kennt aber kein Geld.</p>
-    </details></section>
-  </main>
-  <footer class="fuss"><div class="container fuss-in"><span>Browser-Arcade · Open Source</span><nav aria-label="Rechtliches"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></nav></div></footer>
-  <script type="module" src="./game.js"></script>
-</body>
+      <p class="steuerung" data-nur="arcade">
+        Steuerung: <kbd>↑</kbd> oder <kbd>W</kbd> für HOCH, <kbd>↓</kbd> oder <kbd>S</kbd> für TIEF.
+        Am Handy einfach die Knöpfe antippen. Ass ist die höchste Karte, gleicher Wert zählt als
+        Unentschieden.
+      </p>
+      <p class="steuerung" data-nur="casino" hidden>
+        Steuerung: <kbd>↑</kbd> oder <kbd>W</kbd> für HOCH, <kbd>↓</kbd> oder <kbd>S</kbd> für TIEF,
+        <kbd>G</kbd> für GLEICH. Am Handy einfach die Knöpfe antippen. Ass ist die höchste Karte.
+        Die Quote steht auf dem Knopf.
+      </p>
+
+      <div class="hinweis hinweis-casino">
+        <strong>Hinweis:</strong> Nur Spielgeld – kein Echtgeld, keine Kaufmöglichkeit. Der
+        Arcade-Modus kommt ganz ohne Geld aus; das Casino-Konto teilen sich alle Casino-Spiele
+        dieser Seite und liegt nur in deinem Browser.
+      </div>
+
+      <section style="max-width: 420px; margin-top: 36px">
+        <h2
+          id="topliste-titel"
+          style="font-family: var(--pixel); font-weight: 400; font-size: 0.85rem"
+        >
+          Lokale Top 3 · Längste Ketten
+        </h2>
+        <div id="topliste"></div>
+        <button class="knopf" id="reset" style="margin-top: 10px">Spielstand zurücksetzen</button>
+        <p id="reset-hinweis" style="margin: 8px 0 0; color: var(--mut); font-size: 0.85rem" hidden>
+          Es zählt der höchste Netto-Gewinn eines einzelnen Tipps. Dein Spielgeld bleibt beim
+          Zurücksetzen unverändert.
+        </p>
+      </section>
+
+      <section class="lernbox">
+        <details open>
+          <summary>Anleitung &amp; Regeln</summary>
+          <p>
+            <strong>Ziel:</strong> Tippe richtig, ob die nächste Karte höher oder tiefer ist – und
+            baue die längste Kette.
+          </p>
+          <ul>
+            <li>
+              Es zählt nur der Kartenwert: 2 ist die niedrigste Karte, Ass die höchste. Die Farbe (♠
+              ♥ ♦ ♣) ist egal.
+            </li>
+            <li>Richtig getippt: Kette +1 und weiter. Falsch getippt: Runde vorbei.</li>
+            <li>
+              Hat die nächste Karte denselben Wert, ist es unentschieden – die Kette bleibt, es geht
+              einfach weiter.
+            </li>
+            <li>Gezogen wird ohne Zurücklegen; ist das Deck leer, wird neu gemischt.</li>
+          </ul>
+          <p>
+            <strong>Casino-Modus (nur Spielgeld):</strong> Oben auf „Casino“ umschalten. Beim
+            Wechsel startet das Spiel neu. Die Kette zählt hier nicht, dafür geht es um Spielgeld
+            vom gemeinsamen Casino-Konto.
+          </p>
+          <ul>
+            <li>
+              <strong>Einsatz:</strong> Wähle einen Chip (10, 25, 50 oder 100), dann tippst du HOCH,
+              TIEF oder GLEICH. Der Einsatz wird sofort abgebucht.
+            </li>
+            <li>
+              <strong>Quote:</strong> Sie steht auf jedem Knopf (zum Beispiel „×1,71“) und hängt
+              davon ab, wie viele passende Karten noch im Deck sind. Bei einem Treffer bekommst du
+              Einsatz × Quote (gerundet) zurück, sonst ist der Einsatz weg. Seltene Tipps zahlen
+              viel, wahrscheinliche wenig.
+            </li>
+            <li>
+              <strong>GLEICH:</strong> Die nächste Karte hat exakt denselben Wert. Das ist selten
+              und zahlt deshalb deutlich mehr. Sind alle gleichen Karten schon gezogen, ist der
+              Knopf gesperrt.
+            </li>
+            <li>
+              <strong>Wichtiger Unterschied zum Arcade-Modus:</strong> Dort ist gleicher Wert ein
+              Unentschieden und die Kette bleibt. Im Casino-Modus verliert ein HOCH- oder TIEF-Tipp
+              bei gleichem Wert. Dafür gibt es ja den GLEICH-Knopf.
+            </li>
+            <li>
+              <strong>Top 3:</strong> Im Casino-Modus zählt dein höchster Netto-Gewinn eines
+              einzelnen Tipps. Gibt es keinen Platz in der Topliste, gibt es auch keinen Dialog.
+              Wird das Spielgeld knapp (unter 10), bekommst du neues Startgeld.
+            </li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="lernbox">
+        <details>
+          <summary>Wie funktioniert der Code?</summary>
+          <p>
+            <strong>Das Deck.</strong> Es ist ein Array aus 52 Objekten wie
+            <code>{ wert: 12, farbe: 1 }</code> (Dame, Herz). Gezogen wird mit
+            <code>deck.pop()</code>: Die Karte verschwindet aus dem Array, also gibt es kein
+            Zurücklegen. Ist das Deck leer, baut <code>neuesDeck()</code> ein frisches (ohne die
+            Karte, die gerade offen liegt) und <code>mischen()</code> mischt es.
+          </p>
+          <p>
+            <strong>Mischen mit Fisher-Yates.</strong> Von hinten nach vorne tauscht jede Position
+            mit einer zufälligen Position davor oder sich selbst:
+            <code>j = Math.floor(zufall() * (i + 1))</code>. Das liefert jede der 52! Reihenfolgen
+            mit gleicher Wahrscheinlichkeit. Der beliebte Kurztrick
+            <code>sort(() =&gt; Math.random() - 0.5)</code> ist dagegen ungleichmäßig, weil er nie
+            dafür gedacht war.
+          </p>
+          <p>
+            <strong>Der 3D-Flip.</strong> Jede Karte hat zwei Flächen übereinander: Vorderseite und
+            Rückseite. <code>perspective</code> am äußeren Element erzeugt die Tiefenwirkung,
+            <code>transform-style: preserve-3d</code> hält die Kinder im Raum, und
+            <code>backface-visibility: hidden</code> blendet die jeweils abgewandte Fläche aus. Die
+            Vorderseite ist ab Werk um 180° gedreht, sodass sie erst sichtbar wird, wenn die Karte
+            per <code>rotateY(180deg)</code> umkippt. Die Animation übernimmt eine
+            CSS-<code>transition</code>; JavaScript setzt nur die Klasse <code>aufgedeckt</code>.
+          </p>
+          <p>
+            <strong>Ablauf mit async/await.</strong> Ein Tipp besteht aus mehreren Schritten mit
+            Pausen (aufdecken, Ergebnis zeigen, nächste Karte). Mit
+            <code>await warte(ms)</code> liest sich das wie ein normales Skript von oben nach unten,
+            statt in verschachtelten Timer-Funktionen zu enden.
+          </p>
+          <p>
+            <strong>Vom Zufall zur Quote (Casino-Modus).</strong> Aus
+            <code>zaehleVerbleibende(deck, wert)</code> kennen wir, wie viele der verbleibenden
+            Karten höher, tiefer oder gleich sind. Beispiel: Liegt eine 9 offen, sind noch 51 Karten
+            im Deck: 20 höher (10 bis Ass), 28 tiefer (2 bis 8) und 3 gleich. Die Wahrscheinlichkeit
+            für HOCH ist also 20/51, etwa 39 %. Die <em>faire Quote</em> ist der Kehrwert: 51/20 =
+            2,55. Hättest du bei dieser Quote unendlich oft gespielt, käme genau dein Einsatz wieder
+            heraus (0,39 × 2,55 = 1).
+          </p>
+          <p>
+            <strong>Der Hausvorteil.</strong> Damit die Bank nicht leer ausgeht, zahlt sie weniger
+            als fair: Quote × 0,94, das sind 6 % Abschlag. Aus 2,55 wird 2,40. Auf lange Sicht
+            bekommst du von jedem Spielgeld nur etwa 94 % zurück; die fehlenden 6 % sind der
+            Hausvorteil. Ein einzelner Tipp kann trotzdem gewinnen – der Vorteil zeigt sich erst
+            über viele Runden. Zwei Feinheiten: Die Quote wird auf 2 Nachkommastellen gerundet und
+            ist nie kleiner als 1,05, sonst wäre ein „sicherer“ Tipp witzlos. (Bei fast sicheren
+            Tipps über 95 % liegt die Mindestquote sogar über der fairen Quote, dort hat der Spieler
+            einen kleinen Vorteil – ein Nebeneffekt, der den Schnitt etwas unter 6 % drückt.) Die
+            Funktion <code>quoteBerechnen(restkarten, treffer)</code> ist rein und in Node testbar.
+          </p>
+          <p>
+            <strong>Zahlungsfluss.</strong> <code>einsatzAbbuchen()</code> zieht den Einsatz VOR dem
+            Aufdecken ab, die Quote wird dabei festgehalten. Danach kommt die Karte, und
+            <code>rundeAbschliessen(einsatz, auszahlung)</code> schreibt
+            <code>Math.round(einsatz × quote)</code> gut (oder 0 bei Niederlage). Der Arcade-Modus
+            nutzt dieselben Karten und dieselbe Animation, kennt aber kein Geld.
+          </p>
+        </details>
+      </section>
+    </main>
+    <footer class="fuss">
+      <div class="container fuss-in">
+        <span>Browser-Arcade · Open Source</span>
+        <nav aria-label="Rechtliches">
+          <a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a>
+        </nav>
+      </div>
+    </footer>
+    <script type="module" src="./game.js"></script>
+  </body>
 </html>

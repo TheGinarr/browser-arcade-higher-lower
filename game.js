@@ -28,22 +28,34 @@
       Modus) – dafür gibt es den GLEICH-Tipp mit hoher Quote.
    ============================================================ */
 
-import { bewegungReduziert, zahlHochzaehlen, toplisteAnzeigen, gameOverDialog, stillEintragen } from "./assets/ui.js";
+import {
+  bewegungReduziert,
+  zahlHochzaehlen,
+  toplisteAnzeigen,
+  gameOverDialog,
+  stillEintragen,
+} from "./assets/ui.js";
 import { spielZuruecksetzen, topliste, lade, speichere } from "./assets/storage.js";
 import {
-  STARTGELD, kontostand, einsatzAbbuchen, rundeAbschliessen,
-  istPleite, pleiteNeustart, walletHud, walletHudAktualisieren,
+  STARTGELD,
+  kontostand,
+  einsatzAbbuchen,
+  rundeAbschliessen,
+  istPleite,
+  pleiteNeustart,
+  walletHud,
+  walletHudAktualisieren,
 } from "./assets/wallet.js";
 
-const SPIEL = "higher-lower";   // Schlüssel für storage.js (Arcade-Topliste + gewählter Modus)
-const SPIEL_CASINO = "higher-lower-casino";   // eigener Schlüssel: Casino-Topliste (höchster Netto-Gewinn) + Chip
-const CHIPS = [10, 25, 50, 100];              // erlaubte Einsätze im Casino-Modus
-const MINDESTEINSATZ = CHIPS[0];              // darunter ist man pleite
-const HAUSVORTEIL = 0.06;                     // die Bank zahlt 6 % unter der fairen Quote
-const MINDESTQUOTE = 1.05;                    // so wenig zahlt auch der sicherste Tipp mindestens
+const SPIEL = "higher-lower"; // Schlüssel für storage.js (Arcade-Topliste + gewählter Modus)
+const SPIEL_CASINO = "higher-lower-casino"; // eigener Schlüssel: Casino-Topliste (höchster Netto-Gewinn) + Chip
+const CHIPS = [10, 25, 50, 100]; // erlaubte Einsätze im Casino-Modus
+const MINDESTEINSATZ = CHIPS[0]; // darunter ist man pleite
+const HAUSVORTEIL = 0.06; // die Bank zahlt 6 % unter der fairen Quote
+const MINDESTQUOTE = 1.05; // so wenig zahlt auch der sicherste Tipp mindestens
 const MODI = ["arcade", "casino"];
-const FLIP_MS = 600;              // Dauer des Aufdeckens; passt zu transition in spiel.css (.karte-dreh)
-const PAUSE_MS = 900;             // so lange bleibt das Ergebnis stehen, bevor es weitergeht
+const FLIP_MS = 600; // Dauer des Aufdeckens; passt zu transition in spiel.css (.karte-dreh)
+const PAUSE_MS = 900; // so lange bleibt das Ergebnis stehen, bevor es weitergeht
 
 /* ============================================================
    TEIL 1: REINE SPIELLOGIK (ohne DOM)
@@ -58,10 +70,10 @@ const PAUSE_MS = 900;             // so lange bleibt das Ergebnis stehen, bevor 
  * nicht per CSS-"color" einfärben lassen.
  */
 export const FARBEN = [
-  { name: "Pik",    symbol: "♠︎", rot: false },
-  { name: "Herz",   symbol: "♥︎", rot: true },
-  { name: "Karo",   symbol: "♦︎", rot: true },
-  { name: "Kreuz",  symbol: "♣︎", rot: false },
+  { name: "Pik", symbol: "♠︎", rot: false },
+  { name: "Herz", symbol: "♥︎", rot: true },
+  { name: "Karo", symbol: "♦︎", rot: true },
+  { name: "Kreuz", symbol: "♣︎", rot: false },
 ];
 
 /* Werte: 2..10 sind Zahlenkarten, dann Bube=11, Dame=12, König=13, Ass=14 (höchste Karte). */
@@ -112,10 +124,10 @@ export function neuesDeck(ohneKarte = null) {
  * `zufall` ist austauschbar (Standard Math.random) – für Tests.
  */
 export function mischen(karten, zufall = Math.random) {
-  const kopie = [...karten];                              // Original nicht verändern
+  const kopie = [...karten]; // Original nicht verändern
   for (let i = kopie.length - 1; i > 0; i--) {
-    const j = Math.floor(zufall() * (i + 1));             // 0 … i
-    [kopie[i], kopie[j]] = [kopie[j], kopie[i]];          // Tauschen (Array-Destructuring)
+    const j = Math.floor(zufall() * (i + 1)); // 0 … i
+    [kopie[i], kopie[j]] = [kopie[j], kopie[i]]; // Tauschen (Array-Destructuring)
   }
   return kopie;
 }
@@ -202,7 +214,7 @@ export function quotenFuerDeck(deck, wert) {
 export function casinoTippTrifft(aktuellerWert, naechsterWert, tipp) {
   if (tipp === "gleich") return naechsterWert === aktuellerWert;
   if (tipp === "hoch") return naechsterWert > aktuellerWert;
-  return naechsterWert < aktuellerWert;     // "tief"
+  return naechsterWert < aktuellerWert; // "tief"
 }
 
 /** BRUTTO-Auszahlung bei Treffer: Einsatz x Quote, auf ganze Spielgeld-Einheiten gerundet. */
@@ -332,22 +344,22 @@ function starteSpiel() {
   };
 
   // Beide Karten bauen und einsetzen
-  const aktuelleKarte = karteBauen(true);      // links: liegt offen da
-  const naechsteKarte = karteBauen(false);     // rechts: verdeckter Stapel
+  const aktuelleKarte = karteBauen(true); // links: liegt offen da
+  const naechsteKarte = karteBauen(false); // rechts: verdeckter Stapel
   document.getElementById("halter-aktuell").append(aktuelleKarte.szene);
   document.getElementById("halter-naechste").append(naechsteKarte.szene);
-  aktuelleKarte.szene.setAttribute("role", "img");               // für Screenreader als Bild mit Beschriftung
-  naechsteKarte.szene.setAttribute("aria-hidden", "true");       // verdeckt = nichts vorzulesen
+  aktuelleKarte.szene.setAttribute("role", "img"); // für Screenreader als Bild mit Beschriftung
+  naechsteKarte.szene.setAttribute("aria-hidden", "true"); // verdeckt = nichts vorzulesen
 
   // ----- Spielzustand -----
-  let deck = [];            // verdeckte Karten; die oberste ist die LETZTE im Array
-  let aktuelle = null;      // die offene Karte
-  let kette = 0;            // aktuelle Serie richtiger Tipps
-  let phase = "wartet";     // "wartet" (Tipp möglich) | "aufdecken" (Animation) | "vorbei" (nur Arcade)
-  let modus = modusAusUrl() ?? gespeicherterModus();   // "arcade" | "casino"
-  let einsatz = ladeEinsatz();                         // Casino: gewählter Chip
+  let deck = []; // verdeckte Karten; die oberste ist die LETZTE im Array
+  let aktuelle = null; // die offene Karte
+  let kette = 0; // aktuelle Serie richtiger Tipps
+  let phase = "wartet"; // "wartet" (Tipp möglich) | "aufdecken" (Animation) | "vorbei" (nur Arcade)
+  let modus = modusAusUrl() ?? gespeicherterModus(); // "arcade" | "casino"
+  let einsatz = ladeEinsatz(); // Casino: gewählter Chip
   let quoten = { hoch: null, tief: null, gleich: null }; // Casino: aktuelle Quoten
-  let walletHudGebaut = false;                         // das Wallet-HUD wird erst im Casino-Modus aufgebaut
+  let walletHudGebaut = false; // das Wallet-HUD wird erst im Casino-Modus aufgebaut
 
   // ---------------------------------------------------------
   // Anzeigen
@@ -399,7 +411,7 @@ function starteSpiel() {
     naechsteKarte.dreh.classList.remove("ohne-uebergang");
 
     naechsteKarte.szene.classList.remove("richtig", "gleich", "falsch");
-    karteFuellen(naechsteKarte, null);                          // alte Werte nicht im DOM stehen lassen
+    karteFuellen(naechsteKarte, null); // alte Werte nicht im DOM stehen lassen
     animationNeuStarten(naechsteKarte.szene, "austeilen");
   }
 
@@ -425,7 +437,7 @@ function starteSpiel() {
 
   function neuesSpiel() {
     deck = mischen(neuesDeck());
-    aktuelle = deck.pop();                       // erste Karte liegt offen
+    aktuelle = deck.pop(); // erste Karte liegt offen
     kette = 0;
     phase = "wartet";
 
@@ -446,8 +458,8 @@ function starteSpiel() {
    */
   async function tippen(tipp) {
     if (modus === "casino") return casinoTippen(tipp);
-    if (tipp === "gleich") return;               // GLEICH gibt es nur im Casino-Modus
-    if (phase !== "wartet") return;              // mitten in der Animation: Eingabe ignorieren
+    if (tipp === "gleich") return; // GLEICH gibt es nur im Casino-Modus
+    if (phase !== "wartet") return; // mitten in der Animation: Eingabe ignorieren
     phase = "aufdecken";
     knoepfeEinstellen();
 
@@ -469,7 +481,7 @@ function starteSpiel() {
 
     if (ausgang === "falsch") {
       phase = "vorbei";
-      naechsteKarte.szene.classList.add("falsch");               // roter Blitz + Schütteln
+      naechsteKarte.szene.classList.add("falsch"); // roter Blitz + Schütteln
       meldungSetzen(`Falsch! Die Karte war ${name}.`, "falsch");
       knoepfeEinstellen();
       await warte(bewegungReduziert() ? 400 : PAUSE_MS);
@@ -479,7 +491,7 @@ function starteSpiel() {
         punkte: kette,
         punkteText: `Kette: ${kette}`,
         richtung: "hoch",
-        format: (p) => `Kette: ${p}`,   // Topliste im Dialog hübsch anzeigen
+        format: (p) => `Kette: ${p}`, // Topliste im Dialog hübsch anzeigen
         neustart: neuesSpiel,
       });
       // Topliste + Rekord neu zeigen, sobald der Dialog zu ist (evtl. gab es einen Eintrag)
@@ -576,7 +588,7 @@ function starteSpiel() {
       gewinnElement.classList.add("plus");
       if (!bewegungReduziert()) gewinnElement.classList.add("blitz");
     } else {
-      gewinnElement.textContent = `−${(-netto).toLocaleString("de-DE")}`;   // echtes Minuszeichen (U+2212)
+      gewinnElement.textContent = `−${(-netto).toLocaleString("de-DE")}`; // echtes Minuszeichen (U+2212)
       gewinnElement.classList.add("minus");
     }
   }
@@ -612,8 +624,8 @@ function starteSpiel() {
    */
   async function casinoTippen(tipp) {
     if (phase !== "wartet") return;
-    const quote = quoten[tipp];                  // die Quote gilt zum Zeitpunkt des Tipps
-    if (quote === null) return;                  // unmöglicher Tipp
+    const quote = quoten[tipp]; // die Quote gilt zum Zeitpunkt des Tipps
+    if (quote === null) return; // unmöglicher Tipp
     if (!einsatzAbbuchen(einsatz)) {
       meldungSetzen("Dafür reicht dein Spielgeld nicht. Wähle einen kleineren Einsatz.", "falsch");
       einsatzAnpassen();
@@ -622,7 +634,7 @@ function starteSpiel() {
     }
     const gesetzt = einsatz;
     phase = "aufdecken";
-    walletHudAktualisieren();                    // der Einsatz verlässt sichtbar das Konto
+    walletHudAktualisieren(); // der Einsatz verlässt sichtbar das Konto
     gewinnSetzen(null);
     knoepfeEinstellen();
     naechsteKarte.szene.classList.remove("austeilen", "richtig", "gleich", "falsch");
@@ -651,7 +663,10 @@ function starteSpiel() {
     } else {
       naechsteKarte.szene.classList.add("falsch");
       if (gezogen.wert === aktuelle.wert) {
-        meldungSetzen(`Gleicher Wert (${name}): ${tippName} verliert. Dafür gibt es GLEICH.`, "falsch");
+        meldungSetzen(
+          `Gleicher Wert (${name}): ${tippName} verliert. Dafür gibt es GLEICH.`,
+          "falsch",
+        );
       } else {
         meldungSetzen(`Daneben! Die Karte war ${name}.`, "falsch");
       }
@@ -767,13 +782,13 @@ function starteSpiel() {
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;            // Browser-Kürzel nicht stören
-    if (document.querySelector("dialog[open]")) return;        // Dialog offen → Tasten gehören ihm
+    if (e.ctrlKey || e.metaKey || e.altKey) return; // Browser-Kürzel nicht stören
+    if (document.querySelector("dialog[open]")) return; // Dialog offen → Tasten gehören ihm
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     const taste = e.key?.toLowerCase();
     if (taste === "arrowup" || taste === "w") {
-      e.preventDefault();                                      // Seite nicht scrollen
+      e.preventDefault(); // Seite nicht scrollen
       tippen("hoch");
     } else if (taste === "arrowdown" || taste === "s") {
       e.preventDefault();
@@ -785,13 +800,13 @@ function starteSpiel() {
 
   resetKnopf.addEventListener("click", () => {
     if (modus === "casino") {
-      spielZuruecksetzen(SPIEL_CASINO);  // löscht Casino-Topliste + gespeicherten Chip (NICHT das Spielgeld)
+      spielZuruecksetzen(SPIEL_CASINO); // löscht Casino-Topliste + gespeicherten Chip (NICHT das Spielgeld)
       speichere(SPIEL_CASINO, "einsatz", einsatz);
     } else {
-      spielZuruecksetzen(SPIEL);         // löscht die Arcade-Topliste (und den gemerkten Modus)
+      spielZuruecksetzen(SPIEL); // löscht die Arcade-Topliste (und den gemerkten Modus)
       speichere(SPIEL, "modus", modus);
     }
-    seiteAktualisieren();                // leere Topliste + Rekord 0 anzeigen; die laufende Runde geht weiter
+    seiteAktualisieren(); // leere Topliste + Rekord 0 anzeigen; die laufende Runde geht weiter
   });
 
   // ----- Start -----
@@ -827,7 +842,9 @@ function urlAktualisieren(modus) {
     if (modus === "casino") url.searchParams.set("modus", "casino");
     else url.searchParams.delete("modus");
     window.history.replaceState(null, "", url);
-  } catch { /* bewusst ignoriert */ }
+  } catch {
+    /* bewusst ignoriert */
+  }
 }
 
 // Nur im Browser starten. In Node (Tests) gibt es kein "document" –

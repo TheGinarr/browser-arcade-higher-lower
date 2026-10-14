@@ -6,176 +6,373 @@
    Spielkarten (Vorder-/Rückseite), 3D-Flip, Stapel, Meldungen.
    ============================================================ */
 
-:root{ --rot:#ff3b4e; }       /* Rot für falsche Tipps und Herz/Karo */
+:root {
+  --rot: #ff3b4e;
+} /* Rot für falsche Tipps und Herz/Karo */
 
 /* Das hidden-Attribut soll IMMER gewinnen. Ohne diese Regel würde
    z. B. ".hud{display:flex}" das hidden überstimmen (Autoren-CSS schlägt
    die Browser-Standardregel). Mit hidden werden die Modus-Bereiche versteckt. */
-[hidden]{display:none !important}
+[hidden] {
+  display: none !important;
+}
 
 /* ---------- Modus-Umschalter (Arcade / Casino) ------------------
    Im Stil der Minesweeper-Stufenleiste: Knopf + kleine Zeile darunter.
    Der aktive Modus wird per aria-pressed gestylt – ein Attribut, das
    gleichzeitig Optik UND Barrierefreiheit steuert. */
-.modus-leiste{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 0}
-.modus-leiste .knopf{padding:9px 16px;line-height:1.25;text-align:left}
-.modus-leiste .knopf small{display:block;margin-top:2px;font-weight:400;font-size:.72rem;color:var(--mut)}
-.modus-leiste .knopf[aria-pressed="true"]{
-  border-color:var(--ak);color:var(--ak);
-  box-shadow:0 0 16px color-mix(in srgb,var(--ak) 30%,transparent);
+.modus-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
 }
-.modus-leiste .knopf[aria-pressed="true"] small{color:inherit;opacity:.8}
+.modus-leiste .knopf {
+  padding: 9px 16px;
+  line-height: 1.25;
+  text-align: left;
+}
+.modus-leiste .knopf small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--mut);
+}
+.modus-leiste .knopf[aria-pressed="true"] {
+  border-color: var(--ak);
+  color: var(--ak);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ak) 30%, transparent);
+}
+.modus-leiste .knopf[aria-pressed="true"] small {
+  color: inherit;
+  opacity: 0.8;
+}
 
 /* Wallet-HUD-Wrapper: display:contents = der Wrapper erzeugt keine eigene Box,
    seine Felder reihen sich direkt in der HUD-Zeile ein. */
-.hud-wallet{display:contents}
+.hud-wallet {
+  display: contents;
+}
 
 /* Einsatz-Chips und Gewinn-Anzeige im Casino-Modus */
-.chips-mitte{justify-content:center;margin:10px 0 0}
+.chips-mitte {
+  justify-content: center;
+  margin: 10px 0 0;
+}
 
 /* ---------- Tisch: aktuelle Karte links, Stapel rechts ---------- */
-.tisch{
+.tisch {
   /* --kw = Kartenbreite. clamp(min, bevorzugt, max): am Handy
      schrumpft die Karte mit der Bildschirmbreite, am Desktop
      wächst sie nur bis 180px. Alle Kartenmaße rechnen damit. */
-  --kw:clamp(104px,30vw,180px);
-  display:flex;justify-content:center;align-items:flex-start;
-  gap:clamp(18px,7vw,64px);
-  padding:8px 0 4px;
+  --kw: clamp(104px, 30vw, 180px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(18px, 7vw, 64px);
+  padding: 8px 0 4px;
 }
-.tisch-spalte{display:flex;flex-direction:column;align-items:center;gap:10px}
-.beschriftung{white-space:nowrap;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.tisch-spalte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.beschriftung {
+  white-space: nowrap;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
 
 /* ---------- Karte: Szene → Dreh-Element → zwei Flächen ---------- */
 /* Szene: setzt die Perspektive (je kleiner der Wert, desto dramatischer die Tiefe) */
-.karte-szene{
-  width:var(--kw);aspect-ratio:5/7;
-  perspective:900px;
-  position:relative;
+.karte-szene {
+  width: var(--kw);
+  aspect-ratio: 5/7;
+  perspective: 900px;
+  position: relative;
 }
 /* Dreh-Element: wird gedreht. preserve-3d = die Kinder bleiben im 3D-Raum,
    statt flachgedrückt zu werden. */
-.karte-dreh{
-  position:relative;width:100%;height:100%;
-  transform-style:preserve-3d;
-  transition:transform .6s cubic-bezier(.33,1,.68,1);
+.karte-dreh {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
 }
-.karte-dreh.aufgedeckt{transform:rotateY(180deg)}
+.karte-dreh.aufgedeckt {
+  transform: rotateY(180deg);
+}
 /* Zum "Zurückstellen" ohne sichtbaren Rückwärts-Flip: Übergang kurz aus */
-.karte-dreh.ohne-uebergang{transition:none}
+.karte-dreh.ohne-uebergang {
+  transition: none;
+}
 
 /* Beide Flächen liegen exakt übereinander.
    backface-visibility:hidden = die Fläche ist unsichtbar, sobald man
    auf ihre RÜCKSEITE schaut (Winkel zwischen 90° und 270°). */
-.flaeche{
-  position:absolute;inset:0;
-  border-radius:calc(var(--kw) * .08);
-  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+.flaeche {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--kw) * 0.08);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Rückseite: Muster aus CSS-Verläufen, keine Bilder */
-.flaeche.hinten{
-  background:
-    repeating-linear-gradient(45deg,#1b1b3a 0 7px,#252552 7px 14px);
-  border:2px solid color-mix(in srgb,var(--gold) 55%,var(--line));
-  box-shadow:inset 0 0 0 6px var(--panel),inset 0 0 0 7px color-mix(in srgb,var(--gold) 40%,transparent),0 6px 22px #0008;
+.flaeche.hinten {
+  background: repeating-linear-gradient(45deg, #1b1b3a 0 7px, #252552 7px 14px);
+  border: 2px solid color-mix(in srgb, var(--gold) 55%, var(--line));
+  box-shadow:
+    inset 0 0 0 6px var(--panel),
+    inset 0 0 0 7px color-mix(in srgb, var(--gold) 40%, transparent),
+    0 6px 22px #0008;
 }
-.flaeche.hinten::after{
-  content:"?";position:absolute;inset:0;display:grid;place-items:center;
-  font-family:var(--pixel);font-size:calc(var(--kw) * .3);
-  color:var(--gold);text-shadow:0 0 14px color-mix(in srgb,var(--gold) 60%,transparent);
+.flaeche.hinten::after {
+  content: "?";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel);
+  font-size: calc(var(--kw) * 0.3);
+  color: var(--gold);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--gold) 60%, transparent);
 }
 
 /* Vorderseite: ab Werk um 180° gedreht. Dreht sich das Dreh-Element
    um 180°, ergibt das zusammen 360° → die Vorderseite schaut uns an. */
-.flaeche.vorne{
-  transform:rotateY(180deg);
-  background:linear-gradient(160deg,#f6f6fc,#d3d6ea);
-  color:#14141f;                          /* Pik, Kreuz */
-  box-shadow:0 6px 22px #0008,0 0 0 3px var(--rand,transparent);
-  transition:box-shadow .3s ease;
+.flaeche.vorne {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, #f6f6fc, #d3d6ea);
+  color: #14141f; /* Pik, Kreuz */
+  box-shadow:
+    0 6px 22px #0008,
+    0 0 0 3px var(--rand, transparent);
+  transition: box-shadow 0.3s ease;
 }
-.flaeche.vorne.rot{color:#d1203c}         /* Herz, Karo */
+.flaeche.vorne.rot {
+  color: #d1203c;
+} /* Herz, Karo */
 
 /* Ecken: Wert + Symbol. Die untere Ecke steht auf dem Kopf wie bei echten Karten. */
-.ecke{
-  position:absolute;display:flex;flex-direction:column;align-items:center;
-  line-height:1;font-family:var(--sans);font-weight:700;
-  font-size:calc(var(--kw) * .2);
+.ecke {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: calc(var(--kw) * 0.2);
 }
-.ecke.oben{top:5%;left:7%}
-.ecke.unten{bottom:5%;right:7%;transform:rotate(180deg)}
-.ecke-symbol{font-size:.85em;margin-top:.1em}
-.mitte{
-  position:absolute;inset:0;display:grid;place-items:center;
-  font-size:calc(var(--kw) * .5);line-height:1;
+.ecke.oben {
+  top: 5%;
+  left: 7%;
+}
+.ecke.unten {
+  bottom: 5%;
+  right: 7%;
+  transform: rotate(180deg);
+}
+.ecke-symbol {
+  font-size: 0.85em;
+  margin-top: 0.1em;
+}
+.mitte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--kw) * 0.5);
+  line-height: 1;
 }
 
 /* Ergebnis-Rahmen auf der aufgedeckten Karte */
-.karte-szene.richtig{--rand:var(--lime)}
-.karte-szene.gleich{--rand:var(--cyan)}
-.karte-szene.falsch{--rand:var(--rot);animation:schuettel .45s ease}   /* schuettel: aus style.css */
+.karte-szene.richtig {
+  --rand: var(--lime);
+}
+.karte-szene.gleich {
+  --rand: var(--cyan);
+}
+.karte-szene.falsch {
+  --rand: var(--rot);
+  animation: schuettel 0.45s ease;
+} /* schuettel: aus style.css */
 
 /* Roter/grüner/blauer Blitz: eine halbtransparente Fläche über der Vorderseite,
    die kurz aufleuchtet und wieder verschwindet. */
-.flaeche.vorne::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;
-  background:var(--blitz,transparent);opacity:0;pointer-events:none;
+.flaeche.vorne::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--blitz, transparent);
+  opacity: 0;
+  pointer-events: none;
 }
-.karte-szene.richtig .flaeche.vorne::after{--blitz:var(--lime);animation:karte-blitz .6s ease}
-.karte-szene.gleich  .flaeche.vorne::after{--blitz:var(--cyan);animation:karte-blitz .6s ease}
-.karte-szene.falsch  .flaeche.vorne::after{--blitz:var(--rot);animation:karte-blitz .7s ease}
-@keyframes karte-blitz{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
+.karte-szene.richtig .flaeche.vorne::after {
+  --blitz: var(--lime);
+  animation: karte-blitz 0.6s ease;
+}
+.karte-szene.gleich .flaeche.vorne::after {
+  --blitz: var(--cyan);
+  animation: karte-blitz 0.6s ease;
+}
+.karte-szene.falsch .flaeche.vorne::after {
+  --blitz: var(--rot);
+  animation: karte-blitz 0.7s ease;
+}
+@keyframes karte-blitz {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 
 /* Neue aktuelle Karte: kurzes Aufpoppen. Die einzelnen Eigenschaften
    scale/translate (statt transform) kollidieren nicht mit anderen Effekten. */
-@keyframes karte-neu{from{scale:.88;filter:brightness(1.5)}to{scale:1;filter:none}}
-.karte-szene.karte-neu{animation:karte-neu .35s cubic-bezier(.33,1,.68,1)}
+@keyframes karte-neu {
+  from {
+    scale: 0.88;
+    filter: brightness(1.5);
+  }
+  to {
+    scale: 1;
+    filter: none;
+  }
+}
+.karte-szene.karte-neu {
+  animation: karte-neu 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+}
 
 /* Frische Karte vom Stapel rutscht von oben ein */
-@keyframes austeilen{from{translate:0 -26px;opacity:0}to{translate:0 0;opacity:1}}
-.karte-szene.austeilen{animation:austeilen .35s cubic-bezier(.33,1,.68,1)}
+@keyframes austeilen {
+  from {
+    translate: 0 -26px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+.karte-szene.austeilen {
+  animation: austeilen 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+}
 
 /* ---------- Stapel: zwei versetzte Rückseiten dahinter ---------- */
-.stapel{position:relative;isolation:isolate;margin-right:12px}
-.stapel::before,.stapel::after{
-  content:"";position:absolute;inset:0;
-  border-radius:calc(var(--kw) * .08);
-  background:#1b1b3a;
-  border:2px solid color-mix(in srgb,var(--gold) 35%,var(--line));
+.stapel {
+  position: relative;
+  isolation: isolate;
+  margin-right: 12px;
 }
-.stapel::before{translate:6px 6px;z-index:-1}
-.stapel::after{translate:12px 12px;z-index:-2}
+.stapel::before,
+.stapel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--kw) * 0.08);
+  background: #1b1b3a;
+  border: 2px solid color-mix(in srgb, var(--gold) 35%, var(--line));
+}
+.stapel::before {
+  translate: 6px 6px;
+  z-index: -1;
+}
+.stapel::after {
+  translate: 12px 12px;
+  z-index: -2;
+}
 /* Je weniger Karten übrig, desto flacher der Stapel (data-schichten setzt game.js) */
-.stapel[data-schichten="1"]::after{display:none}
-.stapel[data-schichten="0"]::before,.stapel[data-schichten="0"]::after{display:none}
+.stapel[data-schichten="1"]::after {
+  display: none;
+}
+.stapel[data-schichten="0"]::before,
+.stapel[data-schichten="0"]::after {
+  display: none;
+}
 
 /* ---------- Meldungen und Knöpfe -------------------------------- */
-.meldung{
-  min-height:1.6em;margin:18px 0 0;text-align:center;font-weight:600;
-  transition:color var(--schnell);
+.meldung {
+  min-height: 1.6em;
+  margin: 18px 0 0;
+  text-align: center;
+  font-weight: 600;
+  transition: color var(--schnell);
 }
-.meldung[data-art="richtig"]{color:var(--lime)}
-.meldung[data-art="gleich"]{color:var(--cyan)}
-.meldung[data-art="falsch"]{color:var(--rot)}
-.meldung[data-art="neutral"]{color:var(--txt)}
+.meldung[data-art="richtig"] {
+  color: var(--lime);
+}
+.meldung[data-art="gleich"] {
+  color: var(--cyan);
+}
+.meldung[data-art="falsch"] {
+  color: var(--rot);
+}
+.meldung[data-art="neutral"] {
+  color: var(--txt);
+}
 
-.tipp-knoepfe{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:16px}
-.tipp-knopf{
-  flex:1 1 150px;max-width:230px;min-height:58px;
-  font-family:var(--pixel);font-weight:400;font-size:.85rem;
+.tipp-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
 }
-.tipp-knopf[hidden]{display:none}
+.tipp-knopf {
+  flex: 1 1 150px;
+  max-width: 230px;
+  min-height: 58px;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+.tipp-knopf[hidden] {
+  display: none;
+}
 /* Casino: unter dem Namen steht die aktuelle Quote (Zahlen in der Mono-Schrift) */
-.tipp-quote{display:block;margin-top:6px;font:600 .9rem var(--mono)}
-
-.deck-hinweis{
-  margin:6px 0 0;min-height:1.4em;text-align:center;font-size:.85rem;color:var(--gold);
+.tipp-quote {
+  display: block;
+  margin-top: 6px;
+  font: 600 0.9rem var(--mono);
 }
-.deck-hinweis.einblenden{animation:hinweis-rein .5s ease}
-@keyframes hinweis-rein{from{opacity:0;translate:0 6px}to{opacity:1;translate:0 0}}
 
-.hinweis-casino{margin-top:20px}
+.deck-hinweis {
+  margin: 6px 0 0;
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+.deck-hinweis.einblenden {
+  animation: hinweis-rein 0.5s ease;
+}
+@keyframes hinweis-rein {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.hinweis-casino {
+  margin-top: 20px;
+}
 
 /* Reduzierte Bewegung: der Flip ist dann ein sofortiger Wechsel
    (die globale Regel in style.css kürzt Dauer und Übergänge schon). */
